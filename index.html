@@ -31,6 +31,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
 interface IRouter {
     function swapExactTokensForTokens(
         uint amountIn,
@@ -39,97 +42,48 @@ interface IRouter {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
-
-    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
-}
-
-interface ILFGSwapRouter {
-    function swapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) external returns (uint[] memory amounts);
-
-    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
-}
-
-interface IERC20 {
-    function approve(address spender, uint256 amount) external returns (bool);
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function balanceOf(address account) external view returns (uint256);
 }
 
 contract ArbitrageBot {
-    IRouter public iceCreamRouter;
-    ILFGSwapRouter public lfgSwapRouter;
-    address public owner;
+    using SafeMath for uint256;
 
-    event ArbitrageExecuted(address indexed tokenA, address indexed tokenB, uint amountIn, uint amountOut, uint profit);
-    event TokensWithdrawn(address indexed token, uint amount);
+    address private owner;
+    IRouter public router;
+    IERC20 public wrappedCore;
+    IERC20 public usdt;
 
-    constructor(address _iceCreamRouter, address _lfgSwapRouter) {
-        iceCreamRouter = IRouter(_iceCreamRouter);
-        lfgSwapRouter = ILFGSwapRouter(_lfgSwapRouter);
+    constructor() {
         owner = msg.sender;
+        router = IRouter(0xBb5e1777A331ED93E07cF043363e48d320eb96c4); // IceCreamSwap router
+        wrappedCore = IERC20(0xb0788B601C0D712702bc829B52771199ad8E33Ff); // Wrapped Core contract
+        usdt = IERC20(0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1); // USDT contract
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Not authorized");
+        require(msg.sender == owner, "Not the contract owner");
         _;
     }
 
-    // Function to find and execute arbitrage
-    function findAndExecuteArbitrage(
-        address[] memory path,
-        uint amountIn,
-        uint amountOutMin,
-        uint deadline
-    ) external onlyOwner {
-        // Get prices from IceCreamSwap
-        uint[] memory amountsOutIceCream = iceCreamRouter.getAmountsOut(amountIn, path);
-        uint amountOutIceCream = amountsOutIceCream[amountsOutIceCream.length - 1];
+    function executeArbitrage(uint256 amountIn, uint256 minAmountOut) external onlyOwner {
+        // Perform arbitrage by swapping WrappedCore for USDT
+        wrappedCore.approve(address(router), amountIn);
+        address;
+        path[0] = address(wrappedCore);
+        path[1] = address(usdt);
 
-        // Get prices from LFGSwap
-        uint[] memory amountsOutLFG = lfgSwapRouter.getAmountsOut(amountIn, path);
-        uint amountOutLFG = amountsOutLFG[amountsOutLFG.length - 1];
-
-        // Identify price differences and execute trades if profitable
-        if (amountOutIceCream < amountOutLFG) {
-            // Buy on IceCreamSwap and sell on LFGSwap
-            iceCreamRouter.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
-            lfgSwapRouter.swapExactTokensForTokens(amountOutIceCream, amountOutMin, path, address(this), deadline);
-            uint profit = amountOutLFG - amountOutIceCream; // Calculate profit
-            emit ArbitrageExecuted(path[0], path[path.length - 1], amountIn, amountOutLFG, profit);
-        } else if (amountOutLFG < amountOutIceCream) {
-            // Buy on LFGSwap and sell on IceCreamSwap
-            lfgSwapRouter.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
-            iceCreamRouter.swapExactTokensForTokens(amountOutLFG, amountOutMin, path, address(this), deadline);
-            uint profit = amountOutIceCream - amountOutLFG; // Calculate profit
-            emit ArbitrageExecuted(path[0], path[path.length - 1], amountIn, amountOutIceCream, profit);
-        }
+        router.swapExactTokensForTokens(
+            amountIn,
+            minAmountOut, 
+            path,
+            address(this),
+            block.timestamp + 300 
+        );
     }
 
-    // Function to withdraw tokens
-    function withdrawTokens(address token, uint amount) external onlyOwner {
-        require(IERC20(token).balanceOf(address(this)) >= amount, "Insufficient contract balance");
+    function withdrawTokens(address token, uint256 amount) external onlyOwner {
         IERC20(token).transfer(owner, amount);
-        emit TokensWithdrawn(token, amount);
-    }
-
-    // Function to check the balance of a token
-    function checkBalance(address token) external view returns (uint256) {
-        return IERC20(token).balanceOf(address(this));
     }
 }
-
-// Router addresses
-address constant iceCreamRouterAddress = 0xBb5e1777A331ED93E07cF043363e48d320eb96c4;
-address constant lfgSwapRouterAddress = 0x4f381d5fF61ad1D0eC355fEd2Ac4000eA1e67854;
-
-// Example deployment
-ArbitrageBot arbitrageBot = new ArbitrageBot(iceCreamRouterAddress, lfgSwapRouterAddress);
 </pre>
 <button id="copyButton" onclick="copyCode()" style="display: none;">Copy Code</button>
 
