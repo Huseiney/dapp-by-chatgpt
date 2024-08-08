@@ -1,40 +1,149 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
-    <title>My Dapp</title>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <header>
-      <nav>
-        <ul>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#wallet">Wallet</a></li>
-          <li><a href="#tokens">Tokens</a></li>
-        </ul>
-      </nav>
-    </header>
-    <main>
-      <section id="home">
-        <h1>Welcome to My Dapp</h1>
-        <p>This is a decentralized application that allows you to manage your assets on the blockchain.</p>
-      </section>
-      <section id="wallet">
-        <h2>My Wallet</h2>
-        <p>Here you can manage your wallet and connect to the blockchain.</p>
-        <button id="connect-wallet">Connect Wallet</button>
-      </section>
-      <section id="tokens">
-        <h2>My Tokens</h2>
-        <p>Here you can view and manage your token assets.</p>
-        <button id="get-tokens">Get Tokens</button>
-      </section>
-    </main>
-    <aside>
-      <h3>Recent Transactions</h3>
-      <ul id="transactions"></ul>
-    </aside>
-    <script src="main.js"></script>
-  </body>
-</html>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solidity Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Solidity Code</h1>
+<pre id="solidityCode">
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IRouter {
+    function swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+
+    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
+}
+
+interface ILFGSwapRouter {
+    function swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external returns (uint[] memory amounts);
+
+    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
+}
+
+interface IERC20 {
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+contract ArbitrageBot {
+    IRouter public iceCreamRouter;
+    ILFGSwapRouter public lfgSwapRouter;
+    address public owner;
+
+    event ArbitrageExecuted(address indexed tokenA, address indexed tokenB, uint amountIn, uint amountOut, uint profit);
+    event TokensWithdrawn(address indexed token, uint amount);
+
+    // Constructor where router addresses are set
+    constructor(address _iceCreamRouter, address _lfgSwapRouter) {
+        iceCreamRouter = IRouter(_iceCreamRouter);
+        lfgSwapRouter = ILFGSwapRouter(_lfgSwapRouter);
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not authorized");
+        _;
+    }
+
+    // Function to find and execute arbitrage
+    function findAndExecuteArbitrage(
+        address tokenA,
+        address tokenB,
+        uint amountIn,
+        uint amountOutMin,
+        uint deadline
+    ) external onlyOwner {
+        // Approve tokens for trading
+        IERC20(tokenA).approve(address(iceCreamRouter), amountIn);
+        IERC20(tokenA).approve(address(lfgSwapRouter), amountIn);
+
+        // Define the path for the swaps
+        address;
+        path[0] = tokenA;
+        path[1] = tokenB;
+
+        // Get prices from IceCreamSwap
+        uint[] memory amountsOutIceCream = iceCreamRouter.getAmountsOut(amountIn, path);
+        uint amountOutIceCream = amountsOutIceCream[1];
+
+        // Get prices from LFGSwap
+        uint[] memory amountsOutLFG = lfgSwapRouter.getAmountsOut(amountIn, path);
+        uint amountOutLFG = amountsOutLFG[1];
+
+        // Identify price differences and execute trades if profitable
+        if (amountOutIceCream < amountOutLFG) {
+            // Buy on IceCreamSwap and sell on LFGSwap
+            iceCreamRouter.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
+            lfgSwapRouter.swapExactTokensForTokens(amountOutIceCream, amountOutMin, path, address(this), deadline);
+            uint profit = amountOutLFG - amountOutIceCream; // Calculate profit
+            emit ArbitrageExecuted(tokenA, tokenB, amountIn, amountOutLFG, profit);
+        } else if (amountOutLFG < amountOutIceCream) {
+            // Buy on LFGSwap and sell on IceCreamSwap
+            lfgSwapRouter.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
+            iceCreamRouter.swapExactTokensForTokens(amountOutLFG, amountOutMin, path, address(this), deadline);
+            uint profit = amountOutIceCream - amountOutLFG; // Calculate profit
+            emit ArbitrageExecuted(tokenA, tokenB, amountIn, amountOutIceCream, profit);
+        }
+    }
+
+    // Function to withdraw tokens
+    function withdrawTokens(address token, uint amount) external onlyOwner {
+        require(IERC20(token).balanceOf(address(this)) >= amount, "Insufficient contract balance");
+        IERC20(token).transfer(owner, amount);
+        emit TokensWithdrawn(token, amount);
+    }
+
+    // Function to check the balance of a token
+    function checkBalance(address token) external view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
+}
+</pre>
+<button onclick="copyCode()">Copy Code</button>
+
+<script>
+    function copyCode() {
+        const codeElement = document.getElementById('solidityCode');
+        const code = codeElement.innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Code copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
+
+</body>
+        </html>
