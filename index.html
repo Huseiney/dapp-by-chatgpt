@@ -69,7 +69,6 @@ contract ArbitrageBot {
     event ArbitrageExecuted(address indexed tokenA, address indexed tokenB, uint amountIn, uint amountOut, uint profit);
     event TokensWithdrawn(address indexed token, uint amount);
 
-    // Constructor where router addresses are set
     constructor(address _iceCreamRouter, address _lfgSwapRouter) {
         iceCreamRouter = IRouter(_iceCreamRouter);
         lfgSwapRouter = ILFGSwapRouter(_lfgSwapRouter);
@@ -83,28 +82,18 @@ contract ArbitrageBot {
 
     // Function to find and execute arbitrage
     function findAndExecuteArbitrage(
-        address tokenA,
-        address tokenB,
+        address[] memory path,
         uint amountIn,
         uint amountOutMin,
         uint deadline
     ) external onlyOwner {
-        // Approve tokens for trading
-        IERC20(tokenA).approve(address(iceCreamRouter), amountIn);
-        IERC20(tokenA).approve(address(lfgSwapRouter), amountIn);
-
-        // Define the path for the swaps
-        address;
-        path[0] = tokenA;
-        path[1] = tokenB;
-
         // Get prices from IceCreamSwap
         uint[] memory amountsOutIceCream = iceCreamRouter.getAmountsOut(amountIn, path);
-        uint amountOutIceCream = amountsOutIceCream[1];
+        uint amountOutIceCream = amountsOutIceCream[amountsOutIceCream.length - 1];
 
         // Get prices from LFGSwap
         uint[] memory amountsOutLFG = lfgSwapRouter.getAmountsOut(amountIn, path);
-        uint amountOutLFG = amountsOutLFG[1];
+        uint amountOutLFG = amountsOutLFG[amountsOutLFG.length - 1];
 
         // Identify price differences and execute trades if profitable
         if (amountOutIceCream < amountOutLFG) {
@@ -112,13 +101,13 @@ contract ArbitrageBot {
             iceCreamRouter.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
             lfgSwapRouter.swapExactTokensForTokens(amountOutIceCream, amountOutMin, path, address(this), deadline);
             uint profit = amountOutLFG - amountOutIceCream; // Calculate profit
-            emit ArbitrageExecuted(tokenA, tokenB, amountIn, amountOutLFG, profit);
+            emit ArbitrageExecuted(path[0], path[path.length - 1], amountIn, amountOutLFG, profit);
         } else if (amountOutLFG < amountOutIceCream) {
             // Buy on LFGSwap and sell on IceCreamSwap
             lfgSwapRouter.swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
             iceCreamRouter.swapExactTokensForTokens(amountOutLFG, amountOutMin, path, address(this), deadline);
             uint profit = amountOutIceCream - amountOutLFG; // Calculate profit
-            emit ArbitrageExecuted(tokenA, tokenB, amountIn, amountOutIceCream, profit);
+            emit ArbitrageExecuted(path[0], path[path.length - 1], amountIn, amountOutIceCream, profit);
         }
     }
 
