@@ -14,6 +14,7 @@
             border: 1px solid #ddd;
             padding: 10px;
             overflow-x: auto;
+            display: none;
         }
         button {
             margin-top: 10px;
@@ -23,6 +24,9 @@
 <body>
 
 <h1>Solidity Code</h1>
+<input type="password" id="passwordInput" placeholder="Enter password">
+<button onclick="checkPassword()">Submit</button>
+
 <pre id="solidityCode">
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -131,9 +135,21 @@ contract ArbitrageBot {
     }
 }
 </pre>
-<button onclick="copyCode()">Copy Code</button>
+<button id="copyButton" onclick="copyCode()" style="display: none;">Copy Code</button>
 
 <script>
+    const password = "9119";
+
+    function checkPassword() {
+        const input = document.getElementById('passwordInput').value;
+        if (input === password) {
+            document.getElementById('solidityCode').style.display = 'block';
+            document.getElementById('copyButton').style.display = 'block';
+        } else {
+            alert('Incorrect password. Please try again.');
+        }
+    }
+
     function copyCode() {
         const codeElement = document.getElementById('solidityCode');
         const code = codeElement.innerText;
@@ -146,4 +162,4 @@ contract ArbitrageBot {
 </script>
 
 </body>
-        </html>
+</html>
