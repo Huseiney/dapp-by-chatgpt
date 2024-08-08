@@ -29,10 +29,10 @@
 
 <pre id="solidityCode">
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragm// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 interface IRouter {
     function swapExactTokensForTokens(
@@ -45,8 +45,6 @@ interface IRouter {
 }
 
 contract ArbitrageBot {
-    using SafeMath for uint256;
-
     address private owner;
     IRouter public router;
     IERC20 public wrappedCore;
@@ -84,6 +82,7 @@ contract ArbitrageBot {
         IERC20(token).transfer(owner, amount);
     }
 }
+
 </pre>
 <button id="copyButton" onclick="copyCode()" style="display: none;">Copy Code</button>
 
