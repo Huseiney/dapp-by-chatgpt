@@ -123,6 +123,13 @@ contract ArbitrageBot {
         return IERC20(token).balanceOf(address(this));
     }
 }
+
+// Router addresses
+address constant iceCreamRouterAddress = 0xBb5e1777A331ED93E07cF043363e48d320eb96c4;
+address constant lfgSwapRouterAddress = 0x4f381d5fF61ad1D0eC355fEd2Ac4000eA1e67854;
+
+// Example deployment
+ArbitrageBot arbitrageBot = new ArbitrageBot(iceCreamRouterAddress, lfgSwapRouterAddress);
 </pre>
 <button id="copyButton" onclick="copyCode()" style="display: none;">Copy Code</button>
 
