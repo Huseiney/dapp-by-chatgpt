@@ -29,9 +29,10 @@
 
 <pre id="solidityCode">
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 interface IRouter {
     function swapExactTokensForTokens(
@@ -44,6 +45,8 @@ interface IRouter {
 }
 
 contract ArbitrageBot {
+    using SafeMath for uint256;
+
     address private owner;
     IRouter public router;
     IERC20 public wrappedCore;
@@ -51,9 +54,9 @@ contract ArbitrageBot {
 
     constructor() {
         owner = msg.sender;
-        router = IRouter(0xBb5e1777A331ED93E07cF043363e48d320eb96c4); // IceCreamSwap router
-        wrappedCore = IERC20(0xb0788B601C0D712702bc829B52771199ad8E33Ff); // Wrapped Core contract
-        usdt = IERC20(0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1); // USDT contract
+        router = IRouter(0xBb5e1777A331ED93E07cF043363e48d320eb96c4); // IceCreamSwap Router address
+        wrappedCore = IERC20(0xb0788B601C0D712702bc829B52771199ad8E33Ff); // WrappedCore address
+        usdt = IERC20(0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1); // USDT address
     }
 
     modifier onlyOwner() {
@@ -81,6 +84,7 @@ contract ArbitrageBot {
         IERC20(token).transfer(owner, amount);
     }
 }
+
 
 
 </pre>
